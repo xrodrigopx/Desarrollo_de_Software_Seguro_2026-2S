@@ -8,103 +8,110 @@ Este documento describe, paso a paso, el armado del ambiente de pruebas de aplic
 
 > **Disclaimer:** la redacción de este documento es propia. La organización del material —estructura de directorios, nomenclatura de archivos y disposición de las capturas de pantalla— fue realizada con la asistencia de una herramienta de IA.
 
+## Índice
+
+- [1. Instalación de una máquina virtual de Kali Linux](#1-instalación-de-una-máquina-virtual-de-kali-linux)
+  - [1.1 Creación de la máquina virtual y selección de la imagen](#11-creación-de-la-máquina-virtual-y-selección-de-la-imagen)
+  - [1.2 Ajuste de recursos de hardware](#12-ajuste-de-recursos-de-hardware)
+  - [1.3 Asistente de instalación de Kali Linux](#13-asistente-de-instalación-de-kali-linux)
+  - [1.4 Primer arranque](#14-primer-arranque)
+  - [1.5 Instalación de pimpmykali](#15-instalación-de-pimpmykali)
+- [2. Instalación del proxy de interceptación (Burp Suite)](#2-instalación-del-proxy-de-interceptación-burp-suite)
+- [3. Instalación de Visual Studio Code](#3-instalación-de-visual-studio-code)
+- [4. Instalación de Docker](#4-instalación-de-docker)
+- [5. Ejecución de OWASP Juice Shop en ambiente dockerizado](#5-ejecución-de-owasp-juice-shop-en-ambiente-dockerizado)
+- [6. Ejecución de crAPI en ambiente dockerizado](#6-ejecución-de-crapi-en-ambiente-dockerizado)
+- [7. Prueba de visualización del tráfico en el proxy de interceptación](#7-prueba-de-visualización-del-tráfico-en-el-proxy-de-interceptación)
+  - [7.1 Configuración de FoxyProxy](#71-configuración-de-foxyproxy)
+  - [7.2 Instalación del certificado CA de Burp](#72-instalación-del-certificado-ca-de-burp)
+
 ## 1. Instalación de una máquina virtual de Kali Linux
 
 Instalación de Kali Linux como máquina virtual en VMware Fusion, desde la descarga/importación de la imagen hasta tener el sistema operativo funcionando.
 
-**1.1** Ventana del VMware.
-![1.1](01-instalacion-kali-linux/1.1.jpeg)
+### 1.1 Creación de la máquina virtual y selección de la imagen
 
-**1.2** Crear nueva máquina virtual.
-![1.2](01-instalacion-kali-linux/1.2.jpeg)
+Arranqué desde la ventana principal de VMware Fusion.
 
-**1.3** Elegir la imagen.
-![1.3](01-instalacion-kali-linux/1.3.jpeg)
+- Le di a crear una nueva máquina virtual.
+- Elegí "Install from disc or image" y le apunté a la imagen ISO de Kali Linux que ya tenía descargada.
+- Confirmé que esa era la imagen correcta.
+- Dejé que VMware detectara el sistema operativo (lo reconoció como "Other Linux 6.x kernel 64-bit Arm") y aplicara su configuración recomendada.
 
-**1.4** Confirmar la elección de la imagen.
-![1.4](01-instalacion-kali-linux/1.4.jpeg)
+**Resultado:** la máquina virtual quedó creada, con la imagen de Kali asociada, lista para tocarle los recursos antes de instalar.
 
-**1.5** Asignar el sistema operativo correspondiente a la imagen.
-![1.5](01-instalacion-kali-linux/1.5.jpeg)
+### 1.2 Ajuste de recursos de hardware
 
 **1.6** Revisión de recursos: me parece poco disco, poca memoria y poco CPU, hay que cambiarlo.
 ![1.6](01-instalacion-kali-linux/1.6.jpeg)
 
-**1.7** Cambiar memoria y procesador.
-![1.7](01-instalacion-kali-linux/1.7.jpeg)
+Antes de arrancar la instalación miré el resumen que te muestra VMware al terminar el asistente y los valores por defecto no me convencieron para nada: apenas 8 GB de disco, 768 MB de RAM y 2 núcleos de CPU. Con eso corriendo Kali, más Docker, Burp y VS Code encima, se iba a arrastrar.
 
-**1.8** Aumentar número de núcleos.
-![1.8](01-instalacion-kali-linux/1.8.jpeg)
+- Entré a la configuración de hardware de la VM, a la sección "Processors & Memory".
+- Subí el procesador de 2 a 4 núcleos.
+- Subí la memoria de 768 MB a 2048 MB (VMware me avisaba que me quedaban 16 GB libres para el Mac, así que había margen de sobra).
+- También agrandé el disco, que terminó quedando en unos 32 GB en vez de los 8 GB iniciales.
 
-**1.9** Aumentar la cantidad de memoria.
-![1.9](01-instalacion-kali-linux/1.9.jpeg)
+**Resultado:** la VM quedó con 4 núcleos, 2048 MB de RAM y ~32 GB de disco — recursos de sobra para bancarse el resto del ambiente que se instalaría después.
 
-**1.10** Elegir instalación gráfica para más placer.
-![1.10](01-instalacion-kali-linux/1.10.png)
+### 1.3 Asistente de instalación de Kali Linux
 
-**1.11** Sistema en inglés.
-![1.11](01-instalacion-kali-linux/1.11.png)
+Con la VM ya redimensionada, arranqué el instalador y fui completando el asistente paso a paso.
 
-**1.12** Location USA, indiferente para el caso de uso.
-![1.12](01-instalacion-kali-linux/1.12.png)
+- Elegí la instalación gráfica en vez de la instalación por texto, para más placer.
+- Dejé el sistema en inglés.
+- Location en USA, algo indiferente para este caso de uso.
+- Teclado en inglés, igual que en mi máquina física.
+- Como hostname puse microwave.
+- Dejé el domain name en blanco, no era necesario.
+- Como nombre completo del usuario nuevo puse donald.
+- Como username (el que aparece en el login) quedó también donald.
+- Elegí una password supersecreta y supersegura.
+- Entré al asistente de particionado y elegí el disco destino: /dev/nvme0n1, de 32.2 GB.
+- Usé una sola partición para todo el sistema, no hacían falta más para este caso.
+- Confirmé el esquema de particiones y grabé los cambios en disco.
+- Dejé la selección de herramientas por defecto de Kali para instalar.
 
-**1.13** Teclado en inglés, tal como en mi máquina física.
-![1.13](01-instalacion-kali-linux/1.13.png)
+**Resultado:** el instalador terminó de copiar todo y pidió reiniciar para arrancar por primera vez el Kali ya instalado.
 
-**1.14** Selección de hostname.
-![1.14](01-instalacion-kali-linux/1.14.png)
+### 1.4 Primer arranque
 
-**1.15** Domain name en blanco, no necesario.
-![1.15](01-instalacion-kali-linux/1.15.png)
+Reinicié la VM para que booteara por primera vez desde el disco recién instalado.
 
-**1.16** Nombre del usuario nuevo.
-![1.16](01-instalacion-kali-linux/1.16.png)
-
-**1.17** Username, el que aparece en el login.
-![1.17](01-instalacion-kali-linux/1.17.png)
-
-**1.18** Elección de password supersecreta y supersegura.
-![1.18](01-instalacion-kali-linux/1.18.png)
-
-**1.19** Configuración de las particiones de disco.
-![1.19](01-instalacion-kali-linux/1.19.png)
-
-**1.20** Elección del disco destino.
-![1.20](01-instalacion-kali-linux/1.20.png)
-
-**1.21** Una sola partición para el sistema, no son necesarias más particiones para este caso.
-![1.21](01-instalacion-kali-linux/1.21.png)
-
-**1.22** Confirmar la partición.
-![1.22](01-instalacion-kali-linux/1.22.png)
-
-**1.23** Grabar cambios en el disco.
-![1.23](01-instalacion-kali-linux/1.23.png)
-
-**1.24** Instalación de herramientas, por defecto.
-![1.24](01-instalacion-kali-linux/1.24.png)
-
-**1.25** Tras finalizar la instalación hay que rebootear.
-![1.25](01-instalacion-kali-linux/1.25.png)
-
-**1.26** Primer booteo del sistema nuevo.
-![1.26](01-instalacion-kali-linux/1.26.jpeg)
+**Resultado:** el sistema llegó a la pantalla de login de Kali con el usuario donald y el hostname microwave, confirmando que la instalación había quedado funcional.
 
 **1.27** Presentación de la pantalla de login.
 ![1.27](01-instalacion-kali-linux/1.27.jpeg)
 
-**1.28** Clonar repo de pimpmykali porque `apt update` siempre rompe todo. Repositorio en: https://github.com/Dewalt-arch/pimpmykali
+### 1.5 Instalación de pimpmykali
+
+En Kali recién instalado, un apt update a lo bruto suele romper cosas (repositorios desactualizados, paquetes en conflicto), así que preferí ir por un camino más seguro y usar pimpmykali, una herramienta pensada justo para dejar un Kali nuevo bien configurado.
+
+- Me aseguré de no tener una carpeta pimpmykali previa: `rm -rf pimpmykali/`.
+- Cloné el repositorio: `git clone https://github.com/Dewalt-arch/pimpmykali`.
+- Entré a la carpeta: `cd pimpmykali`.
+- Ejecuté el script con permisos de root: `sudo ./pimpmykali.sh`, usando la opción de menú pensada para una VM de Kali nueva (opción N, según indica el propio README del proyecto).
+
+**Resultado:** el script corrió sin errores, dejando el sistema listo, y recomendó reiniciar una vez más para que todos los cambios quedaran aplicados.
+
+**1.28** Clonar repo de pimpmykali porque apt update siempre rompe todo. Repositorio en: https://github.com/Dewalt-arch/pimpmykali
 ![1.28](01-instalacion-kali-linux/1.28.jpeg)
 
 **1.29** Instalar pimpmykali para dispositivo nuevo.
 ![1.29](01-instalacion-kali-linux/1.29.jpeg)
 
-**1.30** Finalización de la instalación de la herramienta (reboot del sistema recomendado).
-![1.30](01-instalacion-kali-linux/1.30.jpeg)
-
 ## 2. Instalación del proxy de interceptación (Burp Suite)
 
 Instalación de Burp Suite Community Edition dentro de la máquina virtual Kali Linux.
+
+Esta instalación la hice directamente por terminal.
+
+- Primero me fijé si ya estaba instalado: `which burpsuite`, que devolvió "burpsuite not found".
+- Como no estaba, lo instalé con `sudo apt install burpsuite -y`.
+- Para confirmar que había quedado disponible, abrí el buscador de aplicaciones de Kali y tipeé "burp": apareció burpsuite listado como "platform for security testing of web applications".
+- Lo abrí desde ahí.
+
+**Resultado:** Burp Suite Community Edition arrancó sin problemas (versión v2026.7.2, proyecto temporal), mostrando la pestaña Proxy con el Intercept apagado por defecto.
 
 **2.1** Validar que no exista la herramienta y presentar el comando de instalación.
 ![2.1](02-instalacion-burp-suite/2.1.jpeg)
@@ -119,14 +126,14 @@ Instalación de Burp Suite Community Edition dentro de la máquina virtual Kali 
 
 Instalación de Visual Studio Code en la máquina virtual Kali Linux.
 
-**3.1** Presentar el comando para descargar el archivo de instalación para la arquitectura correspondiente del sistema.
-![3.1](03-instalacion-vscode/3.1.jpeg)
+Como la VM es Arm64, tuve que bajar el paquete .deb para esa arquitectura puntual en vez de usar el genérico.
 
-**3.2** Presentar el comando para instalar la herramienta.
-![3.2](03-instalacion-vscode/3.2.png)
+- Descargué el instalador con `wget -O vscode-arm64.deb "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-arm64"` — la descarga terminó pesando 212 MB (222.029.254 bytes).
+- Lo instalé con `sudo apt install ./vscode-arm64.deb -y`.
+- Durante la instalación, el paquete preguntó si quería agregar el repositorio y la clave de firma de Microsoft para poder actualizar VS Code después vía apt. Elegí "No", ya que no lo necesitaba para este caso de uso (una sola instalación puntual).
+- Abrí VS Code para confirmar que había quedado andando.
 
-**3.3** Negar el Microsoft repository porque no es necesario.
-![3.3](03-instalacion-vscode/3.3.png)
+**Resultado:** Visual Studio Code arrancó correctamente, mostrando la pantalla de bienvenida ("Editing evolved"), listo para usarse.
 
 **3.4** Visual Studio Code instalado correctamente.
 ![3.4](03-instalacion-vscode/3.4.png)
@@ -135,16 +142,15 @@ Instalación de Visual Studio Code en la máquina virtual Kali Linux.
 
 Instalación de Docker en la máquina virtual Kali Linux.
 
-**4.1** Validar que la herramienta no esté previamente instalada.
-![4.1](04-instalacion-docker/4.1.jpeg)
+- Primero me fijé si ya estaba instalado: `which docker`, que devolvió "docker not found".
+- Lo instalé con `sudo apt install docker.io docker-compose -y` (no capturé pantalla de este comando puntual, pero es el que ejecuté).
+- Durante la instalación, apt preguntó si quería eliminar todos los datos de Docker (imágenes, contenedores y volúmenes en /var/lib/docker) por si estuviera reemplazando una instalación anterior. Como no tenía ninguna instalación previa, elegí "Sí" sin que esto rompiera nada.
+- Confirmé la instalación con `docker --version`, que devolvió "Docker version 28.5.2+dfsg4, build 9cc6dea".
+- Habilité y arranqué el servicio: `sudo systemctl enable docker` y `sudo systemctl start docker`.
+- Agregué mi usuario al grupo docker para no tener que anteponer sudo en cada comando: `sudo usermod -aG docker $USER`, y apliqué el cambio de grupo en la sesión actual con `newgrp docker`.
+- Para probar que todo funcionaba, corrí un contenedor de prueba: `docker run hello-world`.
 
-**4.1.1** No se capturó pantalla de este paso. El comando ejecutado fue:
-```
-sudo apt install docker.io docker-compose -y
-```
-
-**4.2** Confirmar que se eliminen instalaciones previas de Docker; no hay ninguna, así que esto no rompe nada.
-![4.2](04-instalacion-docker/4.2.png)
+**Resultado:** Docker bajó la imagen hello-world:latest (arquitectura arm64v8), la corrió y mostró el mensaje "Hello from Docker! This message shows that your installation appears to be working correctly.", confirmando que el daemon y los permisos quedaron bien configurados.
 
 **4.3** Validar la instalación de Docker.
 ![4.3](04-instalacion-docker/4.3.png)
@@ -156,20 +162,16 @@ sudo apt install docker.io docker-compose -y
 
 Descarga y ejecución del contenedor de OWASP Juice Shop mediante Docker.
 
+- Busqué en Docker Hub una imagen oficial de Juice Shop y encontré bkimminich/juice-shop (release v20.1.1, 110.8 MB, con más de 50M de descargas).
+- Descargué la imagen con `docker pull bkimminich/juice-shop`.
+- Levanté el contenedor en background, mapeando el puerto 3000 del contenedor al 3000 del host: `docker run -d -p 3000:3000 bkimminich/juice-shop`.
+- Verifiqué que estuviera corriendo con `docker ps`: apareció el contenedor angry_wing (id 9739df3b2c36), con estado "Up" y el puerto 0.0.0.0:3000->3000/tcp expuesto.
+- Entré desde el navegador a http://localhost:3000/#/.
+
+**Resultado:** la aplicación OWASP Juice Shop cargó correctamente en el navegador, mostrando el catálogo de productos y el mensaje de bienvenida propio de la app.
+
 **5.1** Busca en internet una imagen del Juice Shop para Docker.
 ![5.1](05-juice-shop-dockerizado/5.1.png)
-
-**5.2** Clonar la imagen.
-![5.2](05-juice-shop-dockerizado/5.2.png)
-
-**5.3** Finalizar el clonado de la imagen.
-![5.3](05-juice-shop-dockerizado/5.3.jpeg)
-
-**5.4** Inicializar la imagen en un nuevo contenedor.
-![5.4](05-juice-shop-dockerizado/5.4.jpeg)
-
-**5.5** Validar que el contenedor esté corriendo.
-![5.5](05-juice-shop-dockerizado/5.5.jpeg)
 
 **5.6** Validar que se pueda entrar a la app en el navegador.
 ![5.6](05-juice-shop-dockerizado/5.6.jpeg)
@@ -178,26 +180,20 @@ Descarga y ejecución del contenedor de OWASP Juice Shop mediante Docker.
 
 Descarga y ejecución del contenedor de crAPI (Completely Ridiculous API) mediante Docker.
 
-**6.1** Búsqueda de imagen para Docker de crAPI.
-![6.1](06-crapi-dockerizado/6.1.png)
+crAPI resultó ser bastante más armado que Juice Shop, así que en vez de levantar un contenedor suelto tuve que seguir la guía oficial paso a paso.
 
-**6.2** Tiene muchas imágenes porque tiene muchos servicios, voy a buscar algo más compacto.
-![6.2](06-crapi-dockerizado/6.2.png)
+- Busqué en Google "owasp crapi containerized image" y el primer resultado llevaba a la organización crapi en Docker Hub.
+- Ahí vi que no hay una sola imagen, sino 7 repositorios distintos (mailhog, gateway-service, crapi-web, crapi-community, crapi-chatbot, crapi-workshop, crapi-identity) porque crAPI es una arquitectura de microservicios, no una app monolítica. Con tantas piezas sueltas, preferí no armar el `docker run` a mano e ir por algo más prolijo.
+- Entré a la página oficial del proyecto en owasp.org (owasp.org/www-project-crapi/), que confirma que crAPI simula una plataforma de dueños de vehículos, enfocada en vulnerabilidades de API (OWASP API Top 10) y no en los clásicos XSS/SQLi.
+- Desde ahí fui al repositorio en GitHub (github.com/OWASP/crAPI) y leí la sección "Docker and docker compose" del README, que explica que hace falta Docker y docker compose 1.27.0 o superior, y da los comandos para usar las imágenes prebuilt.
+- Descargué el código del repo con `curl -L -o /tmp/crapi.zip https://github.com/OWASP/crAPI/archive/refs/heads/main.zip` y lo descomprimí con `unzip /tmp/crapi.zip`.
+- Entré a la carpeta del deploy: `cd crAPI-main/deploy/docker`.
+- Bajé todas las imágenes con `docker compose pull`: en total tiró 93/93 capas, correspondientes a los servicios crapi-web, crapi-community, api.mypremiumdealership.com, mongodb, crapi-chatbot, crapi-identity, mailhog, crapi-workshop, chromadb y postgresdb.
+- Levanté todo el stack con `docker compose -f docker-compose.yml --compatibility up -d`.
+- Según el propio README, la app queda expuesta en http://localhost:8888, y los correos que envía la aplicación (por ejemplo, para el registro de usuarios) se capturan en MailHog, en http://localhost:8025.
+- Entré a ambas URLs desde el navegador para confirmar que funcionaban.
 
-**6.3** Página de OWASP con el GitHub del proyecto.
-![6.3](06-crapi-dockerizado/6.3.jpeg)
-
-**6.4** Apartado de la instalación por Docker.
-![6.4](06-crapi-dockerizado/6.4.png)
-
-**6.5** Descarga del comprimido con las imágenes.
-![6.5](06-crapi-dockerizado/6.5.jpeg)
-
-**6.6** Docker compose del proyecto.
-![6.6](06-crapi-dockerizado/6.6.png)
-
-**6.7** Verificación de los puertos para acceder a la aplicación.
-![6.7](06-crapi-dockerizado/6.7.png)
+**Resultado:** en localhost:8888/login cargó correctamente la pantalla de login de crAPI, y en localhost:8025 cargó MailHog conectado y a la espera de correos, confirmando que todo el stack de microservicios había quedado operativo.
 
 **6.8** Validar que se pueda acceder a la aplicación.
 ![6.8](06-crapi-dockerizado/6.8.png)
@@ -211,39 +207,33 @@ Descarga y ejecución del contenedor de crAPI (Completely Ridiculous API) median
 
 Configuración de la extensión FoxyProxy en el navegador para enrutar el tráfico hacia el listener de Burp Suite (127.0.0.1:8080).
 
+- Entré a getfoxyproxy.org/downloads/ y, de las opciones de navegador disponibles (Chrome, Firefox, Microsoft Edge, Safari), elegí Chrome.
+- Eso me llevó a la Chrome Web Store, a la página de la extensión FoxyProxy (desarrollada por Beholder Corporation, 3.8 estrellas con 805 valoraciones y 600.000 usuarios) y le di a "Add to Chrome".
+- Abrí las opciones de la extensión, fui a la pestaña "Proxies" y usé "Add" para cargar un proxy nuevo.
+- Lo configuré para que apuntara al listener de Burp: Título 8080, Tipo HTTP, Hostname 127.0.0.1, Puerto 8080.
+- Guardé y abrí el menú de FoxyProxy desde la barra del navegador para confirmar que el proxy quedara disponible para seleccionar.
+
+**Resultado:** el proxy 8080 apareció listado en el menú de FoxyProxy, listo para activarse y enrutar el tráfico del navegador hacia Burp.
+
 **7.1.1** Descarga del plugin para Chromium.
 ![7.1.1](07-configurar-foxyproxy/7.1.1.png)
-
-**7.1.2** Instalación del plugin.
-![7.1.2](07-configurar-foxyproxy/7.1.2.png)
-
-**7.1.3** Configuración del plugin.
-![7.1.3](07-configurar-foxyproxy/7.1.3.png)
-
-**7.1.4** Configuración del proxy para el navegador.
-![7.1.4](07-configurar-foxyproxy/7.1.4.png)
-
-**7.1.5** Validar que exista en el listado de proxies.
-![7.1.5](07-configurar-foxyproxy/7.1.5.png)
 
 ### 7.2 Instalación del certificado CA de Burp
 
 Instalación del certificado CA generado por Burp Suite en el navegador, y verificación de la interceptación de tráfico HTTPS (en este caso, contra OWASP Juice Shop).
 
+- Antes que nada, en Burp fui a Proxy settings y confirmé que el listener siguiera activo en 127.0.0.1:8080 con certificado "Per-host" — el mismo host y puerto que acababa de cargar en FoxyProxy.
+- Con el proxy de FoxyProxy activado, navegué a http://burp/ (la página que Burp expone en su propio listener) y le di clic a "CA Certificate", arriba a la derecha.
+- El navegador descargó el archivo cacert.der (987 bytes) a la carpeta de Descargas.
+- Fui al administrador de certificados de Chrome (chrome://certificate-manager) → "Local certificates" → "Your certificates" → Import, y seleccioné el archivo cacert.der desde ~/Downloads.
+- Confirmé la importación: en "Local certificates" → "Installed by you" apareció listado el certificado PortSwigger CA bajo "Trusted Certificates".
+- Activé el proxy 8080 en FoxyProxy y prendí el Intercept en Burp ("Intercept on").
+- Para probar la interceptación, navegué a juiceshop.local:3000 (usando el hostname configurado en vez de localhost).
+
+**Resultado:** en la pestaña Proxy → Intercept de Burp aparecieron capturadas, en tiempo real, las requests GET del navegador hacia Juice Shop —/socket.io/, /assets/i18n/en.json, /rest/admin/application-configuration, /rest/admin/application-version, /api/Challenges/, /rest/languages—, confirmando que el certificado quedó instalado correctamente y que Burp estaba interceptando el tráfico HTTP/HTTPS entre el navegador y la aplicación.
+
 **7.2.1** Validación del proxy del Burp para que encaje con el del Foxy.
 ![7.2.1](08-instalar-certificado-burp/7.2.1.png)
-
-**7.2.2** Descarga del certificado para el navegador.
-![7.2.2](08-instalar-certificado-burp/7.2.2.png)
-
-**7.2.3** Archivo de descarga.
-![7.2.3](08-instalar-certificado-burp/7.2.3.png)
-
-**7.2.4** _(pendiente de descripción)_
-![7.2.4](08-instalar-certificado-burp/7.2.4.png)
-
-**7.2.5** Instalación en Chromium del certificado.
-![7.2.5](08-instalar-certificado-burp/7.2.5.png)
 
 **7.2.6** Interceptor prendido.
 ![7.2.6](08-instalar-certificado-burp/7.2.6.png)
